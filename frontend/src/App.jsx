@@ -12,7 +12,7 @@ import { applySiteCopyFromApi } from "./lib/siteCopyApi";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 /** Optional profile URLs — add to `.env` when Facebook / Instagram / YouTube are ready */
 const SOCIAL_URLS = {

@@ -1,6 +1,6 @@
 /** API origin without trailing /api — used for uploaded files under /uploads */
 export function getAssetBase() {
-  const api = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+  const api = import.meta.env.VITE_API_URL || "/api";
   return api.replace(/\/api\/?$/, "") || "";
 }
 

@@ -4,7 +4,7 @@ import { assetUrl } from "./lib/assets";
 import { siteCopyDefaults } from "./lib/siteCopyDefaults";
 import { mergeSiteCopyWithDefaults } from "./lib/siteCopyApi";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
 const TOKEN_KEY = "oakcast_admin_token";
 
 function authHeader(token) {
