@@ -1,7 +1,6 @@
 services:
   db:
     image: postgres:16-alpine
-    container_name: oakcast-db
     restart: unless-stopped
     environment:
       POSTGRES_DB: oakcast
@@ -13,22 +12,17 @@ services:
   backend:
     build:
       context: ./backend
-    container_name: oakcast-backend
     restart: unless-stopped
     depends_on:
       - db
     env_file:
       - ./backend/.env
     environment:
-      PORT: 5000
       DB_HOST: db
       DB_PORT: 5432
       DB_NAME: oakcast
       DB_USER: postgres
       DB_PASSWORD: postgres
-      ADMIN_USERNAME: admin
-      ADMIN_PASSWORD: changeme
-      ADMIN_JWT_SECRET: replace-with-a-long-random-secret-in-production
     ports:
       - "5001:5000"
     volumes:
@@ -39,12 +33,11 @@ services:
   frontend:
     build:
       context: ./frontend
-    container_name: oakcast-frontend
     restart: unless-stopped
     depends_on:
       - backend
     environment:
-      VITE_API_URL: http://localhost:5001/api
+      VITE_API_URL: /api
     ports:
       - "5173:5173"
     volumes:
