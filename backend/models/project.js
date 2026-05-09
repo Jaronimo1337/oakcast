@@ -37,6 +37,11 @@ module.exports = (sequelize) => {
         type: DataTypes.ENUM("for_sale", "sold"),
         allowNull: false,
         defaultValue: "for_sale"
+      },
+      sort_order: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
       }
     },
     {

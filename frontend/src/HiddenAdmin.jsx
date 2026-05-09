@@ -53,7 +53,18 @@ const WEBSITE_SECTIONS = [
   {
     id: "philosophy",
     label: "Philosophy & gallery",
-    keys: ["philosophyTitle", "philosophyText", "projectsTitle", "projectsEmpty", "storyTitle", "statusForSale", "statusSold"]
+    keys: [
+      "philosophyTitle",
+      "philosophyText",
+      "projectsTitle",
+      "projectsViewAll",
+      "projectsViewAllHint",
+      "projectsModalClose",
+      "projectsEmpty",
+      "storyTitle",
+      "statusForSale",
+      "statusSold"
+    ]
   },
   {
     id: "materials",
@@ -457,6 +468,40 @@ function ProjectEditorPanel({ project, token, onClose, onSaved, onLogout }) {
             {imageUrls.map((url, idx) => (
               <li key={`${url}-${idx}`} className="relative overflow-hidden rounded-xl border border-white/15">
                 <img src={assetUrl(url)} alt="" className="aspect-[4/3] w-full object-cover" />
+                <div className="absolute left-2 top-2 flex gap-1">
+                  <button
+                    type="button"
+                    disabled={idx === 0}
+                    title="Earlier in gallery"
+                    className="rounded-md bg-black/75 px-2 py-1 text-[11px] text-parchment enabled:hover:bg-black/90 disabled:cursor-not-allowed disabled:opacity-30"
+                    onClick={() =>
+                      setImageUrls((prev) => {
+                        if (idx < 1) return prev;
+                        const n = [...prev];
+                        [n[idx - 1], n[idx]] = [n[idx], n[idx - 1]];
+                        return n;
+                      })
+                    }
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    disabled={idx >= imageUrls.length - 1}
+                    title="Later in gallery"
+                    className="rounded-md bg-black/75 px-2 py-1 text-[11px] text-parchment enabled:hover:bg-black/90 disabled:cursor-not-allowed disabled:opacity-30"
+                    onClick={() =>
+                      setImageUrls((prev) => {
+                        if (idx >= prev.length - 1) return prev;
+                        const n = [...prev];
+                        [n[idx], n[idx + 1]] = [n[idx + 1], n[idx]];
+                        return n;
+                      })
+                    }
+                  >
+                    ↓
+                  </button>
+                </div>
                 <button
                   type="button"
                   className="absolute right-2 top-2 rounded-full bg-black/75 px-2 py-1 text-xs text-parchment hover:bg-red-950/80"
@@ -636,6 +681,26 @@ export default function HiddenAdmin() {
       await loadProjects(token);
     } catch (err) {
       if (err.response?.status === 401) logout();
+    }
+  };
+
+  const moveProject = async (index, delta) => {
+    const ni = index + delta;
+    if (ni < 0 || ni >= projects.length) return;
+    const next = [...projects];
+    [next[index], next[ni]] = [next[ni], next[index]];
+    try {
+      await axios.put(
+        `${API_BASE}/admin/projects/reorder`,
+        { ids: next.map((p) => p.id) },
+        {
+          headers: { ...authHeader(token), "Content-Type": "application/json" }
+        }
+      );
+      await loadProjects(token);
+    } catch (err) {
+      if (err.response?.status === 401) logout();
+      else alert(err.response?.data?.error || err.message || "Reorder failed.");
     }
   };
 
@@ -832,6 +897,26 @@ export default function HiddenAdmin() {
                       <p className="text-xs text-parchment/55">{p.category}</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex shrink-0 items-center rounded-lg border border-white/15 bg-black/35 p-0.5">
+                        <button
+                          type="button"
+                          title="Earlier on site"
+                          disabled={projects.findIndex((x) => x.id === p.id) === 0}
+                          className="rounded px-2 py-1 text-xs enabled:hover:bg-white/10 disabled:opacity-35"
+                          onClick={() => moveProject(projects.findIndex((x) => x.id === p.id), -1)}
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          title="Later on site"
+                          disabled={projects.findIndex((x) => x.id === p.id) === projects.length - 1}
+                          className="rounded px-2 py-1 text-xs enabled:hover:bg-white/10 disabled:opacity-35"
+                          onClick={() => moveProject(projects.findIndex((x) => x.id === p.id), +1)}
+                        >
+                          ↓
+                        </button>
+                      </div>
                       <select
                         className="rounded-lg border border-white/20 bg-black/50 px-2 py-1.5 text-sm outline-none focus:border-amber-warm"
                         value={p.sale_status || "for_sale"}

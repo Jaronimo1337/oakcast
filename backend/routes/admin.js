@@ -101,7 +101,11 @@ router.post("/upload", (req, res) => {
 
 router.get("/projects", async (_req, res) => {
   try {
-    const projects = await Project.findAll({ order: [["created_at", "DESC"]] });
+    const projects = await Project.findAll({ order: [
+      ["sort_order", "ASC"],
+      ["created_at", "ASC"],
+      ["id", "ASC"]
+    ] });
     res.json(projects);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch projects." });
@@ -147,6 +151,8 @@ router.post("/projects", async (req, res) => {
     if (!image_url && image_urls.length === 0) {
       return res.status(400).json({ error: "At least one image is required." });
     }
+    const maxOrd = Number(await Project.max("sort_order"));
+    const nextOrder = Number.isFinite(maxOrd) ? maxOrd + 1 : 0;
     const project = await Project.create({
       title_en: tEn,
       title_lt: tLt,
@@ -155,11 +161,52 @@ router.post("/projects", async (req, res) => {
       category,
       sale_status: normalizeSaleStatus(sale_status),
       image_urls,
-      image_url: image_url || image_urls[0]
+      image_url: image_url || image_urls[0],
+      sort_order: nextOrder
     });
     res.status(201).json(project);
   } catch (error) {
     res.status(400).json({ error: "Could not create project.", details: error.message });
+  }
+});
+
+router.put("/projects/reorder", async (req, res) => {
+  try {
+    const { ids } = req.body || {};
+    if (!Array.isArray(ids)) {
+      return res.status(400).json({ error: "Body must include ids: ordered array of project ids." });
+    }
+    const idList = ids
+      .map((id) => parseInt(String(id), 10))
+      .filter((id) => Number.isFinite(id) && id >= 1);
+    if (idList.length !== ids.length) {
+      return res.status(400).json({ error: "Each id must be a positive integer." });
+    }
+    const rows = await Project.findAll({ attributes: ["id"] });
+    const known = new Set(rows.map((r) => r.id));
+    const missing = idList.filter((id) => !known.has(id));
+    if (missing.length) return res.status(400).json({ error: "Unknown project id in ids.", missing });
+    if (new Set(idList).size !== idList.length) return res.status(400).json({ error: "Duplicate ids." });
+    if (idList.length !== rows.length) {
+      return res.status(400).json({ error: "ids must list every project exactly once.", expected: rows.length, got: idList.length });
+    }
+    await Project.sequelize.transaction(async (t) => {
+      await Promise.all(
+        idList.map((id, index) =>
+          Project.update({ sort_order: index }, { where: { id }, transaction: t })
+        )
+      );
+    });
+    const projects = await Project.findAll({
+      order: [
+        ["sort_order", "ASC"],
+        ["created_at", "ASC"],
+        ["id", "ASC"]
+      ]
+    });
+    res.json(projects);
+  } catch (error) {
+    res.status(500).json({ error: "Could not reorder projects.", details: error.message });
   }
 });
 
@@ -190,6 +237,13 @@ router.put("/projects/:id", async (req, res) => {
       const { image_urls, image_url } = normalizeImages(req.body);
       updates.image_urls = image_urls;
       updates.image_url = image_url || image_urls[0] || project.image_url;
+    }
+    if (req.body.sort_order !== undefined && req.body.sort_order !== null) {
+      const so = parseInt(String(req.body.sort_order), 10);
+      if (!Number.isFinite(so)) {
+        return res.status(400).json({ error: "sort_order must be an integer." });
+      }
+      updates.sort_order = so;
     }
 
     await project.update(updates);

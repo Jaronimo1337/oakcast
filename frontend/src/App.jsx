@@ -34,6 +34,9 @@ const SECTION_IDS = {
   contact: "contact"
 };
 
+/** Homepage gallery shows this many tiles; extras open behind “View all”. */
+const HOMEPAGE_GALLERY_LIMIT = 8;
+
 const galleryListVariants = {
   hidden: {},
   visible: {
@@ -662,8 +665,117 @@ function StickyQuoteCta() {
   );
 }
 
-function Gallery({ projects, onSelect }) {
-  const { t, i18n } = useTranslation();
+function GalleryProjectCard({ project, onSelect, enableLayout = true }) {
+  const { i18n } = useTranslation();
+  return (
+    <motion.article
+      layout={enableLayout}
+      variants={enableLayout ? galleryCardVariants : undefined}
+      whileHover={{ y: enableLayout ? -6 : -3, transition: { type: "spring", stiffness: 250, damping: 20 } }}
+      className="cursor-pointer overflow-hidden rounded-2xl bg-white/12 shadow-soft ring-1 ring-copper-400/20"
+      onClick={() => onSelect(project)}
+    >
+      <div className="relative">
+        <img
+          src={assetUrl(projectPrimaryImage(project))}
+          alt={projectLocalizedTitle(project, i18n.language)}
+          loading="lazy"
+          className="h-64 w-full object-cover transition duration-500 hover:scale-105"
+        />
+        <div className="absolute right-3 top-3">
+          <SaleStatusPill saleStatus={project.sale_status} />
+        </div>
+      </div>
+      <div className="p-5">
+        <p className="text-xs uppercase tracking-[0.2em] text-parchment/65">{project.category}</p>
+        <h3 className="mt-2 text-xl font-medium text-parchment">{projectLocalizedTitle(project, i18n.language)}</h3>
+      </div>
+    </motion.article>
+  );
+}
+
+function AllProjectsModal({ open, projects, onClose, onSelectProject }) {
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const esc = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", esc);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", esc);
+    };
+  }, [open, onClose]);
+
+  return (
+    <AnimatePresence>
+      {open ? (
+        <motion.div
+          key="all-projects-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("projectsTitle")}
+          className="fixed inset-0 z-[55] flex items-start justify-center overflow-y-auto bg-black/72 p-4 pt-24 pb-10 backdrop-blur-sm md:p-8 md:pt-28"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={onClose}
+        >
+          <motion.div
+            className="relative w-full max-w-6xl rounded-3xl border border-white/15 bg-charcoal/95 p-6 shadow-2xl ring-1 ring-black/40 md:p-10"
+            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 380, damping: 32 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-6">
+              <div>
+                <h2 className="text-2xl font-semibold text-parchment md:text-3xl">{t("projectsTitle")}</h2>
+                <p className="mt-2 max-w-xl text-sm text-parchment/65">{t("projectsViewAllHint")}</p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full border border-white/25 px-4 py-2 text-sm text-parchment hover:bg-white/10"
+              >
+                {t("projectsModalClose")}
+              </button>
+            </div>
+            {projects.length === 0 ? (
+              <p className="text-center text-parchment/70">{t("projectsEmpty")}</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {projects.map((project) => (
+                  <GalleryProjectCard
+                    key={project.id}
+                    project={project}
+                    enableLayout={false}
+                    onSelect={(p) => {
+                      onSelectProject(p);
+                      onClose();
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
+function Gallery({ projects, onSelect, onViewAll }) {
+  const { t } = useTranslation();
+  const preview = useMemo(() => projects.slice(0, HOMEPAGE_GALLERY_LIMIT), [projects]);
+  const hasMore = projects.length > HOMEPAGE_GALLERY_LIMIT;
+
   return (
     <motion.section
       {...sectionMotion}
@@ -671,47 +783,44 @@ function Gallery({ projects, onSelect }) {
       className="scroll-mt-24 px-6 py-20 md:scroll-mt-28 md:px-12"
     >
       <div className="mx-auto max-w-6xl">
-        <h2 className="mb-10 text-3xl font-semibold text-parchment md:text-4xl">{t("projectsTitle")}</h2>
+        <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+          <h2 className="text-3xl font-semibold text-parchment md:text-4xl">{t("projectsTitle")}</h2>
+          {hasMore ? (
+            <button
+              type="button"
+              onClick={onViewAll}
+              className="rounded-full border border-amber-warm/40 bg-amber-warm/10 px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-amber-warm hover:bg-amber-warm/20"
+            >
+              {t("projectsViewAll")}
+            </button>
+          ) : null}
+        </div>
         {projects.length === 0 ? (
           <p className="rounded-2xl border border-white/10 bg-white/5 px-5 py-8 text-center text-parchment/70">{t("projectsEmpty")}</p>
         ) : null}
-        <motion.div
-          layout
-          className="columns-1 gap-5 sm:columns-2 lg:columns-3"
-          variants={galleryListVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.12 }}
-        >
-          {projects.map((project) => (
-            <motion.article
-              key={project.id}
-              layout
-              variants={galleryCardVariants}
-              whileHover={{ y: -6, transition: { type: "spring", stiffness: 250, damping: 20 } }}
-              className="mb-5 break-inside-avoid cursor-pointer overflow-hidden rounded-2xl bg-white/12 shadow-soft ring-1 ring-copper-400/20"
-              onClick={() => onSelect(project)}
-            >
-              <div className="relative">
-                <img
-                  src={assetUrl(projectPrimaryImage(project))}
-                  alt={projectLocalizedTitle(project, i18n.language)}
-                  loading="lazy"
-                  className="h-64 w-full object-cover transition duration-500 hover:scale-105"
-                />
-                <div className="absolute right-3 top-3">
-                  <SaleStatusPill saleStatus={project.sale_status} />
-                </div>
-              </div>
-              <div className="p-5">
-                <p className="text-xs uppercase tracking-[0.2em] text-parchment/65">{project.category}</p>
-                <h3 className="mt-2 text-xl font-medium text-parchment">
-                  {projectLocalizedTitle(project, i18n.language)}
-                </h3>
-              </div>
-            </motion.article>
-          ))}
-        </motion.div>
+        {preview.length > 0 ? (
+          <motion.div
+            layout
+            className="grid grid-cols-1 gap-5 justify-items-stretch sm:grid-cols-2 lg:grid-cols-3"
+            variants={galleryListVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.12 }}
+          >
+            {preview.map((project) => (
+              <GalleryProjectCard key={project.id} project={project} onSelect={onSelect} />
+            ))}
+          </motion.div>
+        ) : null}
+        {projects.length === 0 ? null : hasMore ? (
+          <button
+            type="button"
+            onClick={onViewAll}
+            className="mt-10 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.06] py-4 text-sm font-semibold uppercase tracking-[0.12em] text-parchment hover:bg-white/[0.09] md:hidden"
+          >
+            {t("projectsViewAll")}
+          </button>
+        ) : null}
       </div>
     </motion.section>
   );
@@ -873,6 +982,7 @@ function Contact() {
 export default function App() {
   const [projects, setProjects] = useState([]);
   const [activeProject, setActiveProject] = useState(null);
+  const [allProjectsOpen, setAllProjectsOpen] = useState(false);
 
   useEffect(() => {
     applySiteCopyFromApi(API_BASE);
@@ -883,9 +993,9 @@ export default function App() {
     axios
       .get(`${API_BASE}/projects`)
       .then((response) => {
-        if (mounted && Array.isArray(response.data) && response.data.length) {
-          setProjects(response.data);
-        }
+        if (!mounted) return;
+        const d = response.data;
+        setProjects(Array.isArray(d) ? d : []);
       })
       .catch(() => {});
 
@@ -903,11 +1013,17 @@ export default function App() {
       <Hero />
       <Philosophy />
       <MaterialsSection />
-      <Gallery projects={projects} onSelect={setActiveProject} />
+      <Gallery projects={projects} onSelect={setActiveProject} onViewAll={() => setAllProjectsOpen(true)} />
       <AboutStory />
       <FaqSection />
       <Contact />
       <StickyQuoteCta />
+      <AllProjectsModal
+        open={allProjectsOpen}
+        projects={projects}
+        onClose={() => setAllProjectsOpen(false)}
+        onSelectProject={setActiveProject}
+      />
       <ProjectGalleryOverlay project={activeProject} onClose={() => setActiveProject(null)} />
       <SiteFooter />
     </div>

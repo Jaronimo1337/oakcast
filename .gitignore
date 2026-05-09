@@ -37,3 +37,6 @@ coverage/
 
 # Docker local artifacts
 **/.docker/
+
+# Uploaded project assets (stored on server, not in git)
+backend/uploads/projects/*

@@ -34,6 +34,9 @@ export const siteCopyDefaults = {
     materialsCol3Text:
       "Surfaces you live with are finished in Osmo hardwax oil: durable, easy to refresh, and pleasant to touch every day.",
     projectsTitle: "Projects",
+    projectsViewAll: "View all projects",
+    projectsViewAllHint: "Opens the full list in a gallery you can browse.",
+    projectsModalClose: "Close",
     projectsEmpty: "No projects published yet.",
     statusForSale: "For sale",
     statusSold: "Sold",
@@ -131,6 +134,9 @@ export const siteCopyDefaults = {
     materialsCol3Text:
       "Paviršiai, su kuriais gyvenate kasdien, baigiami „Osmo“ kietuoju vašku: ilgaamžiai, lengvai atnaujinami, malonūs liesti.",
     projectsTitle: "Projektai",
+    projectsViewAll: "Žiūrėti visus",
+    projectsViewAllHint: "Visas sąrašas atsidaro galerijoje.",
+    projectsModalClose: "Uždaryti",
     projectsEmpty: "Projektų kol kas nėra.",
     statusForSale: "Parduodama",
     statusSold: "Parduota",

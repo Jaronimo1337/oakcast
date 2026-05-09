@@ -5,7 +5,11 @@ const router = express.Router();
 
 router.get("/", async (_req, res) => {
   try {
-    const projects = await Project.findAll({ order: [["created_at", "DESC"]] });
+    const projects = await Project.findAll({ order: [
+      ["sort_order", "ASC"],
+      ["created_at", "ASC"],
+      ["id", "ASC"]
+    ] });
     res.json(projects);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch projects." });
