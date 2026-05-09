@@ -3,6 +3,9 @@ export const siteCopyDefaults = {
   en: {
     brand: "Oakcast Studio",
     navHome: "Home",
+    navMenuOpenAria: "Open section menu",
+    navMenuCloseAria: "Close menu",
+    navMobileSectionsLabel: "Page sections",
     navPhilosophy: "How We Build",
     navMaterials: "Materials",
     navProjects: "Projects",
@@ -97,6 +100,9 @@ export const siteCopyDefaults = {
   lt: {
     brand: "Oakcast Studio",
     navHome: "Pradžia",
+    navMenuOpenAria: "Atidaryti skyrių meniu",
+    navMenuCloseAria: "Uždaryti meniu",
+    navMobileSectionsLabel: "Puslapio skyriai",
     navPhilosophy: "Kaip gaminame",
     navMaterials: "Medžiaga",
     navProjects: "Projektai",

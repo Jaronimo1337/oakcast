@@ -37,6 +37,9 @@ const WEBSITE_SECTIONS = [
     keys: [
       "brand",
       "navHome",
+      "navMenuOpenAria",
+      "navMenuCloseAria",
+      "navMobileSectionsLabel",
       "navPhilosophy",
       "navMaterials",
       "navProjects",

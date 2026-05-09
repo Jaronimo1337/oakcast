@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence, useInView, useScroll, useSpring } from "framer-motion";
 import gsap from "gsap";
@@ -118,6 +118,22 @@ function IconYoutube({ className }) {
   );
 }
 
+function IconMenu({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+      <path d="M5 7h14M5 12h14M5 17h14" />
+    </svg>
+  );
+}
+
+function IconClose({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
 function SocialLinks({ className = "" }) {
   const { t } = useTranslation();
   const items = [
@@ -182,6 +198,8 @@ function ScrollProgress() {
 
 function TopNav() {
   const { t, i18n } = useTranslation();
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const ids = useMemo(
     () => [
       SECTION_IDS.hero,
@@ -210,51 +228,148 @@ function TopNav() {
     [t]
   );
 
+  const handleSectionNavigate = useCallback((id) => {
+    scrollToId(id);
+    setMenuOpen(false);
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const onChange = () => setMenuOpen(false);
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
   return (
     <header className="fixed left-0 right-0 top-2 z-40 px-3 pt-0.5 md:px-8">
-      <div className="mx-auto flex max-w-6xl items-center gap-3 rounded-2xl border border-white/15 bg-black/50 px-2 py-2 shadow-lg backdrop-blur-md md:px-4 md:py-2.5">
-        <nav
-          aria-label="Section navigation"
-          className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto md:gap-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-        >
-          {items.map(({ id, label }) => {
-            const isActive = active === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => scrollToId(id)}
-                className={`shrink-0 rounded-full px-2.5 py-2 text-[10px] font-semibold uppercase tracking-[0.1em] transition md:px-3 md:text-xs ${
-                  isActive
-                    ? "bg-gradient-to-r from-copper-500 to-amber-warm text-charcoal shadow-sm"
-                    : "text-parchment/90 hover:bg-white/10 hover:text-parchment"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </nav>
-        <div className="flex shrink-0 gap-1 rounded-full border border-white/20 bg-black/30 p-1">
+      {/* Mobile: menu button + compact bar (no sideways scroll); desktop: horizontal pills. */}
+      <div className="relative mx-auto max-w-6xl">
+        <div className="flex items-center gap-2 rounded-2xl border border-white/15 bg-black/50 px-2 py-2 shadow-lg backdrop-blur-md md:gap-3 md:px-4 md:py-2.5">
           <button
             type="button"
-            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold md:px-3 md:text-xs ${
-              current === "en" ? "bg-amber-warm text-charcoal" : "text-parchment"
-            }`}
-            onClick={() => i18n.changeLanguage("en")}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-black/35 text-parchment transition hover:bg-white/10 md:hidden"
+            aria-expanded={menuOpen}
+            aria-controls="mobile-section-nav"
+            onClick={() => setMenuOpen((o) => !o)}
           >
-            EN
+            {menuOpen ? <IconClose className="h-5 w-5" /> : <IconMenu className="h-5 w-5" />}
+            <span className="sr-only">{menuOpen ? t("navMenuCloseAria") : t("navMenuOpenAria")}</span>
           </button>
-          <button
-            type="button"
-            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold md:px-3 md:text-xs ${
-              current === "lt" ? "bg-amber-warm text-charcoal" : "text-parchment"
-            }`}
-            onClick={() => i18n.changeLanguage("lt")}
+
+          <nav
+            aria-label="Section navigation"
+            className="hidden min-w-0 flex-1 flex-nowrap items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] md:flex [&::-webkit-scrollbar]:hidden"
           >
-            LT
-          </button>
+            {items.map(({ id, label }) => {
+              const isActive = active === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => scrollToId(id)}
+                  className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] transition ${
+                    isActive
+                      ? "bg-gradient-to-r from-copper-500 to-amber-warm text-charcoal shadow-sm"
+                      : "text-parchment/90 hover:bg-white/10 hover:text-parchment"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="ml-auto flex shrink-0 gap-1 rounded-full border border-white/20 bg-black/30 p-1" role="group" aria-label="Language">
+            <button
+              type="button"
+              className={`flex h-9 min-w-[2.35rem] items-center justify-center rounded-full px-2 text-[11px] font-semibold md:h-auto md:min-w-0 md:px-3 md:py-1 md:text-xs ${
+                current.startsWith("en") ? "bg-amber-warm text-charcoal shadow-sm" : "text-parchment"
+              }`}
+              onClick={() => i18n.changeLanguage("en")}
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              className={`flex h-9 min-w-[2.35rem] items-center justify-center rounded-full px-2 text-[11px] font-semibold md:h-auto md:min-w-0 md:px-3 md:py-1 md:text-xs ${
+                current.startsWith("lt") ? "bg-amber-warm text-charcoal shadow-sm" : "text-parchment"
+              }`}
+              onClick={() => i18n.changeLanguage("lt")}
+            >
+              LT
+            </button>
+          </div>
         </div>
+
+        <AnimatePresence>
+          {menuOpen ? (
+            <motion.div
+              key="mobile-section-menu"
+              className="fixed inset-0 z-[35] md:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+            >
+              <button
+                type="button"
+                className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
+                aria-label={t("navMenuCloseAria")}
+                onClick={() => setMenuOpen(false)}
+              />
+              <motion.nav
+                id="mobile-section-nav"
+                aria-label={t("navMobileSectionsLabel")}
+                role="navigation"
+                className="absolute left-3 right-3 top-[4.65rem] max-h-[min(72vh,26rem)] overflow-y-auto rounded-2xl border border-white/15 bg-charcoal/95 py-2 shadow-2xl ring-1 ring-black/35 backdrop-blur-md"
+                initial={{ opacity: 0, y: -12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ul className="flex flex-col divide-y divide-white/10">
+                  {items.map(({ id, label }) => {
+                    const isActive = active === id;
+                    return (
+                      <li key={id}>
+                        <button
+                          type="button"
+                          onClick={() => handleSectionNavigate(id)}
+                          className={`w-full px-4 py-3.5 text-left text-sm font-semibold uppercase tracking-wider transition ${
+                            isActive
+                              ? "bg-gradient-to-r from-copper-500/25 to-amber-warm/20 text-parchment"
+                              : "text-parchment/92 hover:bg-white/10"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </motion.nav>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </div>
     </header>
   );
@@ -295,15 +410,18 @@ function Hero() {
       className="relative isolate flex min-h-screen scroll-mt-28 items-center overflow-hidden px-6 pt-[7.5rem] pb-16 md:scroll-mt-32 md:px-12 md:pt-28 md:pb-20"
     >
       <div className="absolute inset-0 overflow-hidden">
-        <img
-          ref={bannerRef}
-          src={HERO_BANNER_SRC}
-          alt=""
-          className="h-full w-full object-cover"
-          style={{ transformOrigin: "50% 50%" }}
-          loading="eager"
-          decoding="async"
-        />
+        {/* Mobile: widen + slide left (~20%) so framing shifts without exposing the charcoal gap on the right. */}
+        <div className="absolute inset-y-0 left-0 h-full max-md:right-auto max-md:left-[-22%] max-md:w-[122%] md:right-0 md:left-0 md:w-auto">
+          <img
+            ref={bannerRef}
+            src={HERO_BANNER_SRC}
+            alt=""
+            className="h-full w-full object-cover object-center"
+            style={{ transformOrigin: "50% 50%" }}
+            loading="eager"
+            decoding="async"
+          />
+        </div>
         <div className="absolute inset-0 bg-gradient-to-br from-[#2a1510]/88 via-[#4a2e20]/70 to-[#6a4028]/50" />
         <div className="absolute inset-0 bg-gradient-to-t from-charcoal/95 via-charcoal/20 to-transparent" />
       </div>
