@@ -14,11 +14,16 @@ gsap.registerPlugin(ScrollTrigger);
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
-/** Optional profile URLs — add to `.env` when Facebook / Instagram / YouTube are ready */
+/** Optional profile URLs — set in `.env`. Use empty string to show “coming soon” (greyed icon, no link). */
+function envSocialUrl(key, fallback) {
+  const v = import.meta.env[key];
+  if (v === "") return "";
+  return v || fallback;
+}
 const SOCIAL_URLS = {
-  facebook: import.meta.env.VITE_SOCIAL_FACEBOOK_URL || "https://www.facebook.com/profile.php?id=61588933092891",
-  instagram: import.meta.env.VITE_SOCIAL_INSTAGRAM_URL || "https://www.instagram.com/oakcaststudio/",
-  youtube: import.meta.env.VITE_SOCIAL_YOUTUBE_URL || "https://www.youtube.com/@oakcaststudio"
+  facebook: envSocialUrl("VITE_SOCIAL_FACEBOOK_URL", "https://www.facebook.com/profile.php?id=61588933092891"),
+  instagram: envSocialUrl("VITE_SOCIAL_INSTAGRAM_URL", "https://www.instagram.com/oakcaststudio/"),
+  youtube: envSocialUrl("VITE_SOCIAL_YOUTUBE_URL", "https://www.youtube.com/@oakcaststudio")
 };
 
 /** Main hero / banner (full-bleed) */
